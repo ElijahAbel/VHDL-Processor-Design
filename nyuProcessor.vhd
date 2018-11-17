@@ -5,7 +5,11 @@ use ieee.std_logic_unsigned.all;
 
 entity nyuProcessor is
 port (
-  clk100m : in std_logic
+btnc : in std_logic; --used for clock
+led : out std_logic_vector(6 DOWNTO 0);
+SSEG_CA: out STD_LOGIC_VECTOR(7 DOWNTO 0);
+SSEG_AN: out STD_LOGIC_VECTOR(7 DOWNTO 0)
+-- clk100mhz : in std_logic
 --  btnL    : in std_logic;
 --  an      : out std_logic_vector(3 downto 0);
 --  cath    : out std_logic_vector(7 downto 0)
@@ -14,6 +18,15 @@ port (
 end entity;
 
 architecture top of nyuProcessor is
+
+component SevenSeg_Top is
+    Port ( 
+           CLK 			: in  STD_LOGIC;
+			  KEY				: in STD_LOGIC_VECTOR (31 downto 0);
+           SSEG_CA 		: out  STD_LOGIC_VECTOR (7 downto 0);
+           SSEG_AN 		: out  STD_LOGIC_VECTOR (7 downto 0)
+			);
+end component;
 
 component instructMem is
 port (
@@ -100,8 +113,15 @@ signal signext_lshf : std_logic_vector(31 downto 0) := (others => '0');
 --signal PCjmp        : std_logic_vector(31 downto 0);
 signal instructAddr : std_logic_vector(31 downto 0) := (others => '0');
 --signal dataAddr     : std_logic_vector(31 downto 0) := (others => '0');
+signal clk100m 	  : std_logic; 
 
 begin
+
+clk100m <= btnc;
+led(6 DOWNTO 0) <= instruction(6 DOWNTO 0);
+SEVSEG: SevenSeg_Top PORT MAP(clk100m, result, SSEG_CA, SSEG_AN);
+
+
 
 --===================
 --==Program Counter==

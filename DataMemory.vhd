@@ -43,7 +43,7 @@ end DataMemory;
 architecture Behavioral of DataMemory is
 
 SIGNAL immAddr : STD_LOGIC_VECTOR(15 downto 0) := x"0000"; --used to address the memory 
-TYPE memory IS ARRAY (0 TO 65536) OF STD_LOGIC_VECTOR(31 DOWNTO 0);
+TYPE memory IS ARRAY (0 TO 31) OF STD_LOGIC_VECTOR(31 DOWNTO 0);
 SIGNAL DataMem : memory := memory'(others=>x"00000000");
 begin
 immAddr <= ALUResult(15 downto 0);
