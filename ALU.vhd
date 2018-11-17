@@ -47,10 +47,10 @@ IF ALUControl="001" then--SUBTRACT
   end if;
 end if;
 
-IF ALUControl="010" then--AND
+IF ALUControl="010" then--AND/JMP
 
 AluOut<=SrcA AND SrcB;
-zeroo<='0';
+zeroo<='1'; --set zero flag if jump
 end if;
 
 IF ALUControl="011" then--OR
@@ -129,7 +129,6 @@ IF ALUControl="111" then --BRANCH NOT EQUAL
     end if;
 end if;
 
-end if;
 
 
 

@@ -33,7 +33,7 @@ use IEEE.NUMERIC_STD.ALL;
 --use UNISIM.VComponents.all;
 
 entity CtrlUnit is
-    Port ( clk : in STD_LOGIC;
+    Port ( --clk : in STD_LOGIC;
 			  opcode : in STD_LOGIC_VECTOR(5 downto 0);
 			  func : in STD_LOGIC_VECTOR(5 downto 0);
            MemtoReg : out  STD_LOGIC;
@@ -51,7 +51,7 @@ entity CtrlUnit is
 			  -- 111 BNE
            ALUsrc : out  STD_LOGIC;
            RegDst : out  STD_LOGIC;
-           jmp : out  STD_LOGIC_VECTOR(1 downto 0);
+--           jmp : out  STD_LOGIC_VECTOR(1 downto 0);
            RegWrite : out  STD_LOGIC);
 end CtrlUnit;
 
@@ -64,20 +64,20 @@ SIGNAL ALUControlS: STD_LOGIC_VECTOR(2 downto 0);
 SIGNAL ALUsrcS: STD_LOGIC := '0';
 SIGNAL RegDstS: STD_LOGIC := '0';
 SIGNAL RegWriteS: STD_LOGIC := '0';
-SIGNAL jmpS: STD_LOGIC_VECTOR(1 downto 0) := "00";
+--SIGNAL jmpS: STD_LOGIC_VECTOR(1 downto 0) := "00";
 
 begin
-Process(clk)
+Process(opcode)
 BEGIN
 
-IF(clk'EVENT and clk = '1') THEN
+-- IF(clk'EVENT and clk = '1') THEN
 MemtoRegS <= '0';
 MemWriteS <= '0';
 BranchS <= '0';
 ALUsrcS <= '0';
 RegDstS <= '0';
 RegWriteS <= '0';
-jmpS <= "00";
+--jmpS <= "00";
 IF(opcode = "000000")	THEN
 	RegDstS <= '1';
 	RegWriteS <= '1';
@@ -142,11 +142,13 @@ ELSE
 		BranchS <= '1';
 		
 	ELSIF(opcode = "001100") THEN
-		jmpS <= "01";
+		ALUControlS <= "010";
+		BranchS <= '1'; -- for jump instruction
 	ELSIF(opcode = "111111") THEN
-		jmpS <= "11";
+		NULL;
 	END IF;
 END IF;
+end process;
 MemtoReg <= MemtoRegS;
 MemWrite <= MemWriteS;
 Branch <= BranchS;
@@ -154,8 +156,6 @@ ALUControl <= ALUControlS;
 ALUsrc <= ALUsrcS;
 RegDst <= RegDstS;
 RegWrite <= RegWriteS;
-jmp <= jmpS;
-END IF;
-END PROCESS;
+--jmp <= jmpS;
 end Behavioral;
 

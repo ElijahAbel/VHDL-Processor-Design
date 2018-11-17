@@ -38,10 +38,10 @@ end RegisterFile;
 architecture Behavioral of RegisterFile is
 
 TYPE regMem IS ARRAY (0 TO 31) OF STD_LOGIC_VECTOR(31 DOWNTO 0); --Register memory type
-Signal regArray : regMem;
+Signal regArray : regMem := (others => x"00000000");
 
-Signal i_RD1: STD_LOGIC_VECTOR(31 DOWNTO 0);
-Signal i_RD2: STD_LOGIC_VECTOR(31 DOWNTO 0);
+Signal i_RD1: STD_LOGIC_VECTOR(31 DOWNTO 0) := (others => '0');
+Signal i_RD2: STD_LOGIC_VECTOR(31 DOWNTO 0) := (others => '0');
 
 	
 begin
@@ -56,14 +56,14 @@ if(clk'EVENT and clk='1') then
 		regArray(CONV_INTEGER(A3(4 DOWNTO 0))) <= WD3(31 DOWNTO 0);
 	end if;
 	
-	i_RD1 <= regArray(CONV_INTEGER(A1(4 DOWNTO 0)));
-	i_RD2 <= regArray(CONV_INTEGER(A2(4 DOWNTO 0)));
+	--i_RD1 <= regArray(CONV_INTEGER(A1(4 DOWNTO 0)));
+	--i_RD2 <= regArray(CONV_INTEGER(A2(4 DOWNTO 0)));
 end if;
 	
 END PROCESS;
 
-RD1 <= i_RD1(31 DOWNTO 0);
-RD2 <= i_RD2(31 DOWNTO 0);
+RD1 <= regArray(CONV_INTEGER(A1(4 DOWNTO 0)));--i_RD1(31 DOWNTO 0);
+RD2 <= regArray(CONV_INTEGER(A2(4 DOWNTO 0)));--i_RD2(31 DOWNTO 0);
 
 end Behavioral;
 
