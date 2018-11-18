@@ -16,15 +16,6 @@ end entity;
 
 architecture top of nyuProcessor is
 
-component SevenSeg_Top is
-    Port ( 
-           CLK 			: in  STD_LOGIC;
-			  KEY				: in STD_LOGIC_VECTOR (31 downto 0);
-           SSEG_CA 		: out  STD_LOGIC_VECTOR (7 downto 0);
-           SSEG_AN 		: out  STD_LOGIC_VECTOR (7 downto 0)
-			);
-end component;
-
 component instructMem is
 port (
   instructAddr : in std_logic_vector(31 downto 0); --input instruction from PC
