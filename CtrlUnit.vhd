@@ -51,7 +51,7 @@ entity CtrlUnit is
 			  -- 111 BNE
            ALUsrc : out  STD_LOGIC;
            RegDst : out  STD_LOGIC;
---           jmp : out  STD_LOGIC_VECTOR(1 downto 0);
+           jmp : out  STD_LOGIC;
            RegWrite : out  STD_LOGIC);
 end CtrlUnit;
 
@@ -64,7 +64,7 @@ SIGNAL ALUControlS: STD_LOGIC_VECTOR(2 downto 0);
 SIGNAL ALUsrcS: STD_LOGIC := '0';
 SIGNAL RegDstS: STD_LOGIC := '0';
 SIGNAL RegWriteS: STD_LOGIC := '0';
---SIGNAL jmpS: STD_LOGIC_VECTOR(1 downto 0) := "00";
+SIGNAL jmpS: STD_LOGIC := '0';
 
 begin
 Process(opcode)
@@ -77,7 +77,7 @@ BranchS <= '0';
 ALUsrcS <= '0';
 RegDstS <= '0';
 RegWriteS <= '0';
---jmpS <= "00";
+jmpS <= '0';
 IF(opcode = "000000")	THEN
 	RegDstS <= '1';
 	RegWriteS <= '1';
@@ -142,10 +142,10 @@ ELSE
 		BranchS <= '1';
 		
 	ELSIF(opcode = "001100") THEN
-		ALUControlS <= "010";
-		BranchS <= '1'; -- for jump instruction
+		jmpS <= '1'; -- for jump instruction
 	ELSIF(opcode = "111111") THEN
-		NULL;
+		BranchS <= '1';
+		jmpS <= '1';
 	END IF;
 END IF;
 end process;
@@ -156,6 +156,6 @@ ALUControl <= ALUControlS;
 ALUsrc <= ALUsrcS;
 RegDst <= RegDstS;
 RegWrite <= RegWriteS;
---jmp <= jmpS;
+jmp <= jmpS;
 end Behavioral;
 

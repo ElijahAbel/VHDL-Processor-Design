@@ -35,32 +35,32 @@ entity DataMemory is
     Port ( clk : in  STD_LOGIC;
            ALUResult : in  STD_LOGIC_VECTOR(31 downto 0);
            WriteData : in  STD_LOGIC_VECTOR(31 downto 0);
---		   MemtoReg : in STD_LOGIC;
            MemWrite : in  STD_LOGIC;
            ReadData : out  STD_LOGIC_VECTOR(31 downto 0));
 end DataMemory;
 
 architecture Behavioral of DataMemory is
 
-SIGNAL immAddr : STD_LOGIC_VECTOR(15 downto 0) := x"0000"; --used to address the memory 
-TYPE memory IS ARRAY (0 TO 31) OF STD_LOGIC_VECTOR(31 DOWNTO 0);
+SIGNAL immAddr : STD_LOGIC_VECTOR(7 downto 0) := x"00"; --used to address the memory 
+TYPE memory IS ARRAY (0 TO 255) OF STD_LOGIC_VECTOR(31 DOWNTO 0);
 SIGNAL DataMem : memory := memory'(others=>x"00000000");
 begin
-immAddr <= ALUResult(15 downto 0);
+immAddr <= ALUResult(7 downto 0);
 Process(clk, MemWrite, DataMem)
 Begin
 IF(clk'event AND clk = '1') THEN
--- WE can not access the Mem to Write and Read at the same time, so I made these 2 signals not be '1' simultaneously.	
 -- Store
 IF(MemWrite = '1') THEN
 	ReadData <= ALUResult;
 	DataMem(CONV_INTEGER(immAddr)) <= WriteData;
 -- Load
-ELSE
-	ReadData <= DataMem(CONV_INTEGER(immAddr));
+
+	
 END IF;
 --ReadData <= ReadD;
 END IF;
+
+	ReadData <= DataMem(CONV_INTEGER(immAddr));
 END PROCESS;
 end Behavioral;
 

@@ -50,7 +50,7 @@ end if;
 IF ALUControl="010" then--AND/JMP
 
 AluOut<=SrcA AND SrcB;
-zeroo<='1'; --set zero flag if jump
+--zeroo<='1'; --set zero flag if jump
 end if;
 
 IF ALUControl="011" then--OR

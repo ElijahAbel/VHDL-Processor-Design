@@ -6,10 +6,17 @@ use ieee.std_logic_unsigned.all;
 entity nyuProcessor is
 port (
   clk100m : in std_logic;
-   myclk : in std_logic;
- tosel: in std_logic_vector(1 downto 0):="00";
-  an      : out std_logic_vector(7 downto 0);
-  cath    : out std_logic_vector(6 downto 0)
+  myclk: in std_logic;
+   tosel: in std_logic_vector(2 downto 0):="000";
+    an      : out std_logic_vector(7 downto 0);
+    cath    : out std_logic_vector(6 downto 0);
+ledbranch: out std_logic:='0';
+ledjump: out std_logic:='0';
+ledhalt: out std_logic:='0'
+
+--  btnL    : in std_logic;
+--  an      : out std_logic_vector(3 downto 0);
+--  cath    : out std_logic_vector(7 downto 0)
 );
 
 end entity;
@@ -33,8 +40,8 @@ port (
   ALUControl  : out std_logic_vector(2 downto 0);
   ALUsrc      : out std_logic;
   regDst      : out std_logic;
-  RegWrite    : out std_logic
---  jmp      : out std_logic_vector(1 downto 0)
+  RegWrite    : out std_logic;
+  jmp      : out std_logic
 );
 end component;
 
@@ -97,39 +104,88 @@ signal PCplus4      : std_logic_vector(31 downto 0) := (others => '0');
 signal PCbranch     : std_logic_vector(31 downto 0) := (others => '0');
 signal signext      : std_logic_vector(31 downto 0) := (others => '0');
 signal signext_lshf : std_logic_vector(31 downto 0) := (others => '0');
---signal jmp          : std_logic_vector(1 downto 0);
---signal PCjmp        : std_logic_vector(31 downto 0);
+signal jmp          : std_logic := '0';
+signal PCjmp        : std_logic_vector(31 downto 0) := (others => '0');
 signal instructAddr : std_logic_vector(31 downto 0) := (others => '0');
+signal halt         : std_logic;
+signal clk          : std_logic;
 --signal dataAddr     : std_logic_vector(31 downto 0) := (others => '0');
+--signal sel          : std_logic_vector(1 downto 0) := "00";
 signal count_int : integer := 0;
 signal counter1: std_logic_vector(6 downto 0);
 signal ano: std_logic_vector(7 downto 0);
 signal tobeshown: std_logic_vector(3 downto 0);
 signal SSEG_CA: std_logic_vector(6 downto 0);
+signal result_d : std_logic_vector(31 downto 0);
+signal SrcA_d : std_logic_vector(31 downto 0);
+signal SrcB_d : std_logic_vector(31 downto 0);
+signal ALUResult_d : std_logic_vector(31 downto 0);
+signal WriteResult_d : std_logic_vector(31 downto 0);
+
 
 begin
 
+halt <= jmp and branch;
+clk <= clk100m and (not (halt));
+ledjump<=jmp;
+ledbranch<=branch;
+ledhalt<=halt;
 
 --===================
 --==Program Counter==
 --===================
 
-PC_proc : process (clk100m)
+PC_proc : process (clk)
 begin
-  if rising_edge(clk100m) then
-    PC_d <= PC;
+  if rising_edge(clk) then
+    PC_d <= PC; 
+  end if;
+end process;
+process (myclk)
+begin
+  if rising_edge(myclk) then
+    result_d <= result;
+  end if;
+end process;
+process (myclk)
+begin
+if rising_edge(myclk) then
+    SrcA_d <= rd1;
   end if;
 end process;
 
-process(myclk)
+process (myclk)
 begin
+if rising_edge(myclk) then
+    SrcB_d <= SrcB;
+  end if;
+end process;
+
+process (myclk)
+begin
+if rising_edge(myclk) then
+    ALUResult_d <= DataMemAddr;
+  end if;
+end process;
+process (myclk)
+begin
+if rising_edge(myclk) then
+    WriteResult_d <= rd2;
+  end if;
+end process;
+
+
+process(myclk, result_d,PC_d,halt)
+begin
+
+
  if rising_edge(myclk) then
   count_int<=count_int+1;
  end if;
  
-if tosel="00" then
+if tosel="000" then
 
- if((count_int mod 100000) > 5000) AND ((count_int mod 100000) < 10000)  then
+ if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
  ano<="11111110";
  tobeshown<=PC_d(3 downto 0);
  
@@ -169,47 +225,214 @@ if tosel="00" then
 end if;
 
 
-if tosel="01" then
+if tosel="001" then
 
- if((count_int mod 100000) > 5000) AND ((count_int mod 100000) < 10000)  then
+ if((count_int mod 100000) > 0) AND ((count_int mod 100000) < 10000)  then
  ano<="11111110";
- tobeshown<=result(3 downto 0);
+ tobeshown<=result_d(3 downto 0);
  
  end if;
  if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
  ano<="11111101";
- tobeshown<=result(7 downto 4);
+ tobeshown<=result_d(7 downto 4);
  
  end if;
  if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
   ano<="11111011";
-  tobeshown<=result(11 downto 8);
+  tobeshown<=result_d(11 downto 8);
   end if;
   if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
     ano<="11110111";
-    tobeshown<=result(15 downto 12);
+    tobeshown<=result_d(15 downto 12);
     end if;
   if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
       ano<="11101111";
-        tobeshown<=result(19 downto 16);
+        tobeshown<=result_d(19 downto 16);
       end if; 
  
  if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
             ano<="11011111";
-            tobeshown<=result(23 downto 20);
+            tobeshown<=result_d(23 downto 20);
             end if; 
  if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
                 ano<="10111111";
-                tobeshown<=result(27 downto 24);
+                tobeshown<=result_d(27 downto 24);
                 end if;
   if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
                                ano<="01111111";
-                               tobeshown<=result(31 downto 28);
+                               tobeshown<=result_d(31 downto 28);
                                end if;
                                                            
 
 end if;
 
+
+
+
+if tosel="010" then
+
+ if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
+ ano<="11111110";
+ tobeshown<=SrcA_d(3 downto 0);
+ 
+ end if;
+ if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
+ ano<="11111101";
+ tobeshown<=SrcA_d(7 downto 4);
+ 
+ end if;
+ if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
+  ano<="11111011";
+  tobeshown<=SrcA_d(11 downto 8);
+  end if;
+  if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
+    ano<="11110111";
+    tobeshown<=SrcA_d(15 downto 12);
+    end if;
+  if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
+      ano<="11101111";
+        tobeshown<=SrcA_d(19 downto 16);
+      end if; 
+ 
+ if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
+            ano<="11011111";
+            tobeshown<=SrcA_d(23 downto 20);
+            end if; 
+ if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
+                ano<="10111111";
+                tobeshown<=SrcA_d(27 downto 24);
+                end if;
+  if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
+                               ano<="01111111";
+                               tobeshown<=SrcA_d(31 downto 28);
+                               end if;
+                                                           
+
+end if;
+
+
+if tosel="011" then
+
+ if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
+ ano<="11111110";
+ tobeshown<=SrcB_d(3 downto 0);
+ 
+ end if;
+ if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
+ ano<="11111101";
+ tobeshown<=SrcB_d(7 downto 4);
+ 
+ end if;
+ if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
+  ano<="11111011";
+  tobeshown<=SrcB_d(11 downto 8);
+  end if;
+  if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
+    ano<="11110111";
+    tobeshown<=SrcB_d(15 downto 12);
+    end if;
+  if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
+      ano<="11101111";
+        tobeshown<=SrcB_d(19 downto 16);
+      end if; 
+ 
+ if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
+            ano<="11011111";
+            tobeshown<=SrcB_d(23 downto 20);
+            end if; 
+ if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
+                ano<="10111111";
+                tobeshown<=SrcB_d(27 downto 24);
+                end if;
+  if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
+                               ano<="01111111";
+                               tobeshown<=SrcB_d(31 downto 28);
+                               end if;
+                                                           
+
+end if;
+
+if tosel="100" then
+
+ if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
+ ano<="11111110";
+ tobeshown<=ALUResult_d(3 downto 0);
+ 
+ end if;
+ if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
+ ano<="11111101";
+ tobeshown<=ALUResult_d(7 downto 4);
+ 
+ end if;
+ if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
+  ano<="11111011";
+  tobeshown<=ALUResult_d(11 downto 8);
+  end if;
+  if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
+    ano<="11110111";
+    tobeshown<=ALUResult_d(15 downto 12);
+    end if;
+  if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
+      ano<="11101111";
+        tobeshown<=ALUResult_d(19 downto 16);
+      end if; 
+ 
+ if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
+            ano<="11011111";
+            tobeshown<=ALUResult_d(23 downto 20);
+            end if; 
+ if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
+                ano<="10111111";
+                tobeshown<=ALUResult_d(27 downto 24);
+                end if;
+  if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
+                               ano<="01111111";
+                               tobeshown<=ALUResult_d(31 downto 28);
+                               end if;
+                                                           
+
+end if;
+
+if tosel="101" then
+
+ if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
+ ano<="11111110";
+ tobeshown<=WriteResult_d(3 downto 0);
+ 
+ end if;
+ if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
+ ano<="11111101";
+ tobeshown<=WriteResult_d(7 downto 4);
+ 
+ end if;
+ if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
+  ano<="11111011";
+  tobeshown<=WriteResult_d(11 downto 8);
+  end if;
+  if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
+    ano<="11110111";
+    tobeshown<=WriteResult_d(15 downto 12);
+    end if;
+  if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
+      ano<="11101111";
+        tobeshown<=WriteResult_d(19 downto 16);
+      end if; 
+ 
+ if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
+            ano<="11011111";
+            tobeshown<=WriteResult_d(23 downto 20);
+            end if; 
+ if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
+                ano<="10111111";
+                tobeshown<=WriteResult_d(27 downto 24);
+                end if;
+  if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
+                               ano<="01111111";
+                               tobeshown<=WriteResult_d(31 downto 28);
+                               end if;
+                                                           
+
+end if;
    
                         
 case tobeshown is
@@ -239,7 +462,12 @@ case tobeshown is
 cath<=SSEG_CA;
  an<=ano;
 
+
+
 end process;
+
+
+
 
 --===================
 --====== MUXES ======
@@ -272,16 +500,28 @@ begin
   end if;
 end process;
 
-PC_mux : process (PCSrc, PCbranch, PCplus4)
+PC_mux : process (jmp, branch, PCbranch, PCplus4, PCjmp)
 begin
-  if PCSrc = '1' then
-    PC <= PCbranch;
-  else
-    PC <= PCplus4; 
-  end if;
-end process;
+-- --  if PCSrc = '1' then
+-- --    PC <= PCbranch;
+-- --  else
+-- --    PC <= PCplus4; 
+-- --  end if;
 
---PCjmp <= PCplus4(31 downto 28) + instruction(25 downto 0) + "00"; --jump to the address specified
+	-- if( jmp = '1' and branch = '1') then
+	--     HLT
+	-- els if
+	
+	if(jmp = '1' and branch = '0') then
+		PC <= PCjmp;
+	elsif(jmp = '0') then
+		if(PCSrc = '1') then
+			PC <= PCbranch;
+	    else
+		    PC <= PCplus4;
+		end if;
+	end if;
+end process;
 
 --==========================
 --==Sign Ext and Additions==
@@ -290,10 +530,12 @@ signImm <= instruction(15 downto 0);
 
 signext <=  x"0000" & signImm; --extend the signed immediate address
 
-signext_lshf <= signext(31 downto 2) & "00"; --shift left by 2 of signext
+signext_lshf <= signext(29 downto 0) & "00"; --shift left by 2 of signext
 
 PCplus4  <= PC_d + 4; --byte addressing
 PCbranch <= signext_lshf + PCplus4; --addressing if branch
+
+PCjmp <= PCplus4(31 downto 28) & instruction(25 downto 0) & "00"; --jump to the address specified
 
 PCsrc <= branch and zero; --set the PC to branch address
 
@@ -317,13 +559,13 @@ port map(
   ALUControl => ALUctrl                   , --out std_logic_vector(2 downto 0);
   ALUsrc     => ALUsrc                    , --out std_logic;
   regDst     => regDst                    , --out std_logic;
-  RegWrite   => regWr                       --out std_logic
---  jmp      => jmp
+  RegWrite   => regWr                     , --out std_logic
+  jmp        => jmp
 );
 
 regFile_map : RegisterFile
 port map(
-  clk     => clk100m                   , --in std_logic;
+  clk     => clk                   , --in std_logic;
   a1      => instruction(25 downto 21) , --in std_logic_vector(4 downto 0); --Bits 25 downto 21 of instruction (Rs)
   a2      => instruction(20 downto 16) , --in std_logic_vector(4 downto 0); --Bits 20 downto 16 of instruction (Rt)
   a3      => writeReg                , --in std_logic_vector(4 downto 0); --Depending on the MUX Rt(20:16) or Rd(15:11)
@@ -344,7 +586,7 @@ port map(
 
 dataMem_map : DataMemory
 port map(
-  clk           => clk100m  , --in std_logic_vector(31 downto 0);
+  clk           => clk  , --in std_logic_vector(31 downto 0);
   ALUResult     => dataMemAddr , --in std_logic_vector(31 downto 0); --input address from ALU
   MemWrite      => memWrite , --in std_logic; --write enable if memory to write
   WriteData     => rd2      , --in std_logic_vector(31 downto 0); --input of rd2
