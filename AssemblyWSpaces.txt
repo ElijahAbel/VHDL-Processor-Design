@@ -1,0 +1,209 @@
+LW R2, R0, 26 //R2=A  -- We are Assuming that the A and B are stored in Mem[26] and Mem[27] and S[0] through S[25] are stored in S[0] through S[25]
+LW R3, R0, 27 //R3=B
+ADDI R9, R0, 13 //R9 to be used as the loop bound
+LW R4, R1, 0 //R4 holds S[i]   //R1 will be used for i in the future
+LW R5, R1, 1 //R5 holds S[i+1]
+ADD R2, R2, R4
+ADD R3, R3, R5
+NOR R28, R2, R3 //R28 = A NOR B   --- Loop should come back to this line ----XOR using NOR operations--- Assuming R2 = A, R3 = B
+NOR R29, R2, R28 //R29 = A NOR R28
+NOR R30, R3, R28 //R30 = B NOR R28
+NOR R31, R29, R30 //R31 = R29 NOR R30
+NOR R6, R31, R31 //R6 = R31 NOR R31 (A XOR B)
+ANDI, R10,R3,31 //Extracting 5 LSBs of B to find out the value to left rotate by, R11 contains the values
+ADDI R11,R0,0 //Store 0 for our counter
+SHL R6,R6,1
+ADDI R11, R11, 1 //increment R11
+BLT, R11, R10,-2
+ADDI R12, R0, 31 //R12 = 31   //Begin Shift right
+SUB R12, R12, R10 //R12 = 31 - LSB of B
+ADDI R13, R0, 1 //R13 = 1 if we are about to right shift A xor B
+JUMP //after the halt
+ADD R2, R6, R14 //Adding the left shifted and right shifted components together.
+SHL R7, R1, 2 //R7 = 2xi
+LW R8, R7, 0 //R8 = S[2xi]
+ADD R2, R6, R8 //A = ((A xor B) << B) + S[2xi]
+NOR R28, R3, R2 //R28 = B NOR A   --- Loop should come back to this line
+NOR R29, R3, R28 //R29 = B NOR R28
+NOR R30, R2, R28 //R30 = A NOR R28
+NOR R31, R29, R30 //R31 = R29 NOR R30
+NOR R6, R31, R31 //R6 = R31 NOR R31 (B XOR A)
+ANDI, R10,R2,31 //Extracting 5 LSBs of A to find out the value to left rotate by, R11 contains the values
+ADDI R11,R0,0 //Store 0 for our counter
+SHL R6,R6,1
+ADDI R11, R11, 1 //increment R11
+BLT, R11, R10,-2
+ADDI R12, R0, 31 //R12 = 31    //Begin Shift right
+SUB R12, R12, R10 //R12 = 31 - LSB of A
+ADDI R13, R0, 0 //R13 = 0 if we are about to right shift B xor A
+JUMP //after the halt to execute the shift right
+ADD R3, R6, R14 //Adding the left shifted and right shifted components together.
+LW R8, R7, 1 //R8 = S[2xi+1]
+ADD, R3, R6, R8 //B = ((B xor A) << A) + S[2xi+1]
+ADDI, R1, R1, 1 //R1 = i = i + 1
+BNE R1, R9, //should loop back to the specified line above
+HALT
+ADDI R14, R6, 0 //Store R6 = XOR value into R14 initially   //Begin right shift - initialization of values
+ADDI R15, R0, 0 //R15 is for tracking the result of the right shift --- Reg initialized to 0
+ADDI R18, R0, 0 //R18 is for tracking how many right shifts have been done
+LB, R16, R0,130 //R16 = Mem(130) = 2147483648  //Begin right shift - Jump point for each loop after a shift of one
+BLT R14, R16, 3
+LB R17, R0, 129 //R17 = Mem(129) = 1073741824 //R17 to be added to result
+SUB R14, R14, R16 //a = a - 2147483648
+ADD R15, R15, R17 //result = result + 1073741824
+LB, R16, R0,129 //R16 = Mem(129) = 1073741824
+BLT R14, R16, 3
+LB R17, R0, 128 //R17 = Mem(128) = 536870912 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 1073741824
+ADD R15, R15, R17 //result = result + 536870912
+LB, R16, R0,128 //R16 = Mem(128) = 536870912
+BLT R14, R16, 3
+LB R17, R0, 127 //R17 = Mem(127) = 268435456 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 536870912
+ADD R15, R15, R17 //result = result + 268435456
+LB, R16, R0,127 //R16 = Mem(127) = 268435456
+BLT R14, R16, 3
+LB R17, R0, 126 //R17 = Mem(126) = 134217728 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 268435456
+ADD R15, R15, R17 //result = result + 134217728
+LB, R16, R0,126 //R16 = Mem(126) = 134217728
+BLT R14, R16, 3
+LB R17, R0, 125 //R17 = Mem(125) = 67108864 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 134217728
+ADD R15, R15, R17 //result = result + 67108864
+LB, R16, R0,125 //R16 = Mem(125) = 67108864
+BLT R14, R16, 3
+LB R17, R0, 124 //R17 = Mem(124) = 33554432 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 67108864
+ADD R15, R15, R17 //result = result + 33554432
+LB, R16, R0,124 //R16 = Mem(124) = 33554432
+BLT R14, R16, 3
+LB R17, R0, 123 //R17 = Mem(123) = 16777216 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 33554432
+ADD R15, R15, R17 //result = result + 16777216
+LB, R16, R0,123 //R16 = Mem(123) = 16777216
+BLT R14, R16, 3
+LB R17, R0, 122 //R17 = Mem(122) = 8388608 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 16777216
+ADD R15, R15, R17 //result = result + 8388608
+LB, R16, R0,122 //R16 = Mem(122) = 8388608
+BLT R14, R16, 3
+LB R17, R0, 121 //R17 = Mem(121) = 4194304 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 8388608
+ADD R15, R15, R17 //result = result + 4194304
+LB, R16, R0,121 //R16 = Mem(121) = 4194304
+BLT R14, R16, 3
+LB R17, R0, 120 //R17 = Mem(120) =  2097152 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 4194304
+ADD R15, R15, R17 //result = result +  2097152
+LB, R16, R0,120 //R16 = Mem(120) = 2097152
+BLT R14, R16, 3
+LB R17, R0, 119 //R17 = Mem(119) = 1048576 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 2097152
+ADD R15, R15, R17 //result = result + 1048576
+LB, R16, R0,119 //R16 = Mem(119) = 1048576
+BLT R14, R16, 3
+LB R17, R0, 118 //R17 = Mem(118) =  524288 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 1048576
+ADD R15, R15, R17 //result = result +  524288
+LB, R16, R0,118 //R16 = Mem(118) = 524288
+BLT R14, R16, 3
+LB R17, R0, 117 //R17 = Mem(117) = 262144 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 524288
+ADD R15, R15, R17 //result = result + 262144
+LB, R16, R0,117 //R16 = Mem(117) = 262144
+BLT R14, R16, 3
+LB R17, R0, 116 //R17 = Mem(116) = 131072 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 262144
+ADD R15, R15, R17 //result = result + 131072
+LB, R16, R0,116 //R16 = Mem(116) = 131072
+BLT R14, R16, 3
+LB R17, R0, 115 //R17 = Mem(115) = 65536 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 131072
+ADD R15, R15, R17 //result = result + 65536
+LB, R16, R0,115 //R16 = Mem(115) = 65536
+BLT R14, R16, 3
+LB R17, R0, 114 //R17 = Mem(114) = 32768 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 65536
+ADD R15, R15, R17 //result = result + 32768
+LB, R16, R0,114 //R16 = Mem(114) = 32768
+BLT R14, R16, 3
+LB R17, R0, 113 //R17 = Mem(113) = 16384//R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 32768
+ADD R15, R15, R17 //result = result + 16384
+LB, R16, R0,113 //R16 = Mem(113) = 16384
+BLT R14, R16, 3
+LB R17, R0, 112 //R17 = Mem(112) = 8192 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 16384
+ADD R15, R15, R17 //result = result + 8192
+LB, R16, R0,112 //R16 = Mem(112) = 8192
+BLT R14, R16, 3
+LB R17, R0, 111 //R17 = Mem(111) = 4096 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 8192
+ADD R15, R15, R17 //result = result + 4096
+LB, R16, R0,111 //R16 = Mem(111) = 4096
+BLT R14, R16, 3
+LB R17, R0, 110 //R17 = Mem(110) = 2048 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 4096
+ADD R15, R15, R17 //result = result + 2048
+LB, R16, R0,110 //R16 = Mem(110) = 2048
+BLT R14, R16, 3
+LB R17, R0, 109 //R17 = Mem(109) = 1024 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 2048
+ADD R15, R15, R17 //result = result + 1024
+LB, R16, R0,109 //R16 = Mem(109) = 1024
+BLT R14, R16, 3
+LB R17, R0, 108 //R17 = Mem(108) = 512 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 1024
+ADD R15, R15, R17 //result = result + 512
+LB, R16, R0,108 //R16 = Mem(108) = 512
+BLT R14, R16, 3
+LB R17, R0, 107 //R17 = Mem(107) = 256 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 512
+ADD R15, R15, R17 //result = result + 256
+LB, R16, R0,107 //R16 = Mem(107) = 256
+BLT R14, R16, 3
+LB R17, R0, 106 //R17 = Mem(106) = 128 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 256
+ADD R15, R15, R17 //result = result + 128
+LB, R16, R0,106 //R16 = Mem(106) = 128
+BLT R14, R16, 3
+LB R17, R0, 105 //R17 = Mem(105) = 64 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 128
+ADD R15, R15, R17 //result = result + 64
+LB, R16, R0,105 //R16 = Mem(105) = 64
+BLT R14, R16, 3
+LB R17, R0, 104 //R17 = Mem(104) = 32 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 64
+ADD R15, R15, R17 //result = result + 32
+LB, R16, R0,104 //R16 = Mem(104) = 32
+BLT R14, R16, 3
+LB R17, R0, 103 //R17 = Mem(103) = 16 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 32
+ADD R15, R15, R17 //result = result + 16
+LB, R16, R0,103 //R16 = Mem(103) = 16
+BLT R14, R16, 3
+LB R17, R0, 102 //R17 = Mem(102) = 8 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 16
+ADD R15, R15, R17 //result = result + 8
+LB, R16, R0,102 //R16 = Mem(102) = 8
+BLT R14, R16, 3
+LB R17, R0, 101 //R17 = Mem(101) = 4 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 8
+ADD R15, R15, R17 //result = result + 4
+LB, R16, R0,101 //R16 = Mem(101) = 4
+BLT R14, R16, 3
+LB R17, R0, 100 //R17 = Mem(100) = 2 //R17 to hold the amount to be added to result
+SUB R14, R14, R16 //a = a - 4
+ADD R15, R15, R17 //result = result + 2
+LB, R16, R0,100 //R16 = Mem(100) = 2
+BLT R14, R16, 3
+ADDI R17, R0, 1 //R17 stores the amount to be added to result
+SUB R14, R14, R16 //a = a - 2
+ADD R15, R15, R17 //result = result + 1
+ADDI R14, R15, 0 //Store the newly shifted by one value before the next iteration of the loop
+ADDI R18, R18, 1 //R18 increments after each single bit right rotate
+BEQ R18, R12, 1 //If we’ve shifted right enough times, skip the jump
+JUMP //should jump to after the initialization period of the right shift
+BEQ R13, R0, //branch back to after the B xor A left rotate
+JUMP //Jump back to after the A xor B left rotate
