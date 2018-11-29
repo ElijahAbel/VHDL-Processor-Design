@@ -67,7 +67,7 @@ SIGNAL RegWriteS: STD_LOGIC := '0';
 SIGNAL jmpS: STD_LOGIC := '0';
 
 begin
-Process(opcode)
+Process(opcode, func)
 BEGIN
 
 -- IF(clk'EVENT and clk = '1') THEN

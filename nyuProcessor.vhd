@@ -6,17 +6,19 @@ use ieee.std_logic_unsigned.all;
 entity nyuProcessor is
 port (
   clk100m : in std_logic;
-  myclk: in std_logic;
-   tosel: in std_logic_vector(2 downto 0):="000";
-    an      : out std_logic_vector(7 downto 0);
-    cath    : out std_logic_vector(6 downto 0);
-ledbranch: out std_logic:='0';
-ledjump: out std_logic:='0';
-ledhalt: out std_logic:='0'
-
---  btnL    : in std_logic;
---  an      : out std_logic_vector(3 downto 0);
---  cath    : out std_logic_vector(7 downto 0)
+  din1     : in std_logic_vector(15 downto 0);
+  btnL    : in std_logic;
+  -- myclk: in std_logic;
+   -- tosel: in std_logic_vector(2 downto 0):="000";
+     an      : out std_logic_vector(7 downto 0);
+     cath    : out std_logic_vector(6 downto 0);
+-- ledbranch: out std_logic:='0';
+-- ledjump: out std_logic:='0';
+-- ledhalt: out std_logic:='0'
+leds: out std_logic_vector(6 downto 0)
+  
+ -- an      : out std_logic_vector(3 downto 0);
+  --cath    : out std_logic_vector(6 downto 0)
 );
 
 end entity;
@@ -41,7 +43,7 @@ port (
   ALUsrc      : out std_logic;
   regDst      : out std_logic;
   RegWrite    : out std_logic;
-  jmp      : out std_logic
+  jmp         : out std_logic
 );
 end component;
 
@@ -71,6 +73,8 @@ end component;
 component DataMemory is
 port (
   clk        : in std_logic;
+  din        : in std_logic_vector(63 downto 0);
+  dout       : out std_logic_vector(63 downto 0);
   ALUResult  : in std_logic_vector(31 downto 0); --input address from ALU
   MemWrite   : in std_logic; --write enable if memory to write
   WriteData  : in std_logic_vector(31 downto 0); --input of rd2
@@ -109,6 +113,8 @@ signal PCjmp        : std_logic_vector(31 downto 0) := (others => '0');
 signal instructAddr : std_logic_vector(31 downto 0) := (others => '0');
 signal halt         : std_logic;
 signal clk          : std_logic;
+signal d_clk        :std_logic;
+signal clk1        :std_logic;
 --signal dataAddr     : std_logic_vector(31 downto 0) := (others => '0');
 --signal sel          : std_logic_vector(1 downto 0) := "00";
 signal count_int : integer := 0;
@@ -121,15 +127,83 @@ signal SrcA_d : std_logic_vector(31 downto 0);
 signal SrcB_d : std_logic_vector(31 downto 0);
 signal ALUResult_d : std_logic_vector(31 downto 0);
 signal WriteResult_d : std_logic_vector(31 downto 0);
+signal di_valid: std_logic:='0' ;
+signal btn_press: integer:=0;
+signal cntr: integer:=0;
+signal total_input: std_logic_vector(63 downto 0);
+signal din:std_logic_vector(63 downto 0);
+signal dout:std_logic_vector(63 downto 0);
+signal dout_d:std_logic_vector(63 downto 0);
+signal din11:std_logic_vector(15 downto 0);
+signal din12:std_logic_vector(15 downto 0);
+signal din13:std_logic_vector(15 downto 0);
+signal din14:std_logic_vector(15 downto 0);
 
-
+signal test:std_logic_vector(31 downto 0):=x"00000000";
+begin
+process(btnL)
 begin
 
+if (falling_edge(btnL)) then
+
+btn_press<=btn_press+1;
+leds<="0000001";
+end if;
+
+if btn_press=1 then
+
+din<=x"0000000000000000";
+leds<="0000010";
+end if;
+
+if btn_press=2 then
+
+din11<=din1;
+leds<="0000100";
+end if;
+
+if btn_press=3 then
+
+din12<=din1;
+leds<="0001000";
+end if;
+
+if btn_press=4 then
+
+din13<=din1;
+leds<="0010000";
+end if;
+
+if btn_press=5 then
+
+din14<=din1;
+leds<="0100000";
+end if;
+
+if btn_press=6 then
+din<=din11&din12&din13&din14;
+
+leds<="1000000";
+end if;
+if btn_press=7 then
+
+di_valid<='1';
+leds<="1111111";
+end if;
+if btn_press>7 then
+
+di_valid<='1';
+leds<="1111111";
+end if;
+end process;
 halt <= jmp and branch;
-clk <= clk100m and (not (halt));
-ledjump<=jmp;
-ledbranch<=branch;
-ledhalt<=halt;
+clk <= clk100m and (not (halt)) and di_valid;
+d_clk<=clk100m and halt and di_valid;
+
+
+-- ledjump<=jmp;
+-- ledbranch<=branch;
+-- ledhalt<=halt;
 
 --===================
 --==Program Counter==
@@ -141,330 +215,415 @@ begin
     PC_d <= PC; 
   end if;
 end process;
-process (myclk)
-begin
-  if rising_edge(myclk) then
-    result_d <= result;
+
+
+
+process (halt)
+begin   
+if halt='1' then
+dout_d<=dout;
+if rising_edge(clk) then
+   count_int<=count_int+1;
+   
   end if;
+
+
+if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
+  ano<="11111110";
+  tobeshown<=dout_d(63 downto 60);
+ 
+  end if;
+  if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
+  ano<="11111101";
+  tobeshown<=dout_d(59 downto 56);
+ 
+  end if;
+  if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
+   ano<="11111011";
+   tobeshown<=dout_d(55 downto 52);
+   end if;
+   if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
+     ano<="11110111";
+     tobeshown<=dout_d(51 downto 48);
+     end if;
+   if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
+       ano<="11101111";
+         tobeshown<=dout_d(47 downto 44);
+       end if; 
+ 
+  if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
+             ano<="11011111";
+             tobeshown<=dout_d(43 downto 40);
+             end if; 
+  if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
+                 ano<="10111111";
+                 tobeshown<=dout_d(39 downto 36);
+                 end if;
+   if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
+                                ano<="01111111";
+                                tobeshown<=dout_d(35 downto 32);
+                                end if;
+                                                           
+
+ case tobeshown is
+                                              when "0000" => SSEG_CA <= "1000000"; --0
+                                            when "0001" => SSEG_CA <= "1111001"; --1
+                                          when "0010" => SSEG_CA <= "0100100";  --2
+                                            when "0011" => SSEG_CA <= "0110000"; --3
+                                            when "0100" => SSEG_CA <= "0011001"; --4
+                                            when "0101" => SSEG_CA <= "0010010"; --5
+                                            when "0110" => SSEG_CA <= "0000010";  --6 
+                                            when "0111" => SSEG_CA <= "1111000";  --7
+                                            when "1000" => SSEG_CA <= "0000000"; --8
+                                            when "1001" => SSEG_CA <= "0010000"; --9
+                                            when "1010" => SSEG_CA <= "0001000"; --A
+                                            when "1011" => SSEG_CA <= "0000011"; --b
+                                            when "1100" => SSEG_CA <= "1000110"; --C
+                                            when "1101" => SSEG_CA <= "0100001"; --d  
+                                            when "1110" => SSEG_CA <= "0000110"; --E
+                                            when others => SSEG_CA <= "0001110";  --F
+                                     end case;                               
+                               
+                               
+  if count_int=45000 then
+  count_int<=0;
+ 
+  end if;
+ cath<=SSEG_CA;
+  an<=ano;
+
+
+end if;
+
 end process;
-process (myclk)
-begin
-if rising_edge(myclk) then
-    SrcA_d <= rd1;
-  end if;
-end process;
-
-process (myclk)
-begin
-if rising_edge(myclk) then
-    SrcB_d <= SrcB;
-  end if;
-end process;
-
-process (myclk)
-begin
-if rising_edge(myclk) then
-    ALUResult_d <= DataMemAddr;
-  end if;
-end process;
-process (myclk)
-begin
-if rising_edge(myclk) then
-    WriteResult_d <= rd2;
-  end if;
-end process;
 
 
-process(myclk, result_d,PC_d,halt)
-begin
 
 
- if rising_edge(myclk) then
-  count_int<=count_int+1;
- end if;
+-- process (myclk)
+-- begin
+  -- if rising_edge(myclk) then
+    -- result_d <= result;
+  -- end if;
+-- end process;
+-- process (myclk)
+-- begin
+-- if rising_edge(myclk) then
+    -- SrcA_d <= rd1;
+  -- end if;
+-- end process;
+
+-- process (myclk)
+-- begin
+-- if rising_edge(myclk) then
+    -- SrcB_d <= SrcB;
+  -- end if;
+-- end process;
+
+-- process (myclk)
+-- begin
+-- if rising_edge(myclk) then
+    -- ALUResult_d <= DataMemAddr;
+  -- end if;
+-- end process;
+-- process (myclk)
+-- begin
+-- if rising_edge(myclk) then
+    -- WriteResult_d <= rd2;
+  -- end if;
+-- end process;
+
+
+-- process(myclk, result_d,PC_d,halt)
+-- begin
+
+
+ -- if rising_edge(myclk) then
+  -- count_int<=count_int+1;
+ -- end if;
  
-if tosel="000" then
+-- if tosel="000" then
 
- if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
- ano<="11111110";
- tobeshown<=PC_d(3 downto 0);
+ -- if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
+ -- ano<="11111110";
+ -- tobeshown<=PC_d(3 downto 0);
  
- end if;
- if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
- ano<="11111101";
- tobeshown<=PC_d(7 downto 4);
+ -- end if;
+ -- if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
+ -- ano<="11111101";
+ -- tobeshown<=PC_d(7 downto 4);
  
- end if;
- if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
-  ano<="11111011";
-  tobeshown<=PC_d(11 downto 8);
-  end if;
-  if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
-    ano<="11110111";
-    tobeshown<=PC_d(15 downto 12);
-    end if;
-  if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
-      ano<="11101111";
-        tobeshown<=PC_d(19 downto 16);
-      end if; 
+ -- end if;
+ -- if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
+  -- ano<="11111011";
+  -- tobeshown<=PC_d(11 downto 8);
+  -- end if;
+  -- if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
+    -- ano<="11110111";
+    -- tobeshown<=PC_d(15 downto 12);
+    -- end if;
+  -- if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
+      -- ano<="11101111";
+        -- tobeshown<=PC_d(19 downto 16);
+      -- end if; 
  
- if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
-            ano<="11011111";
-            tobeshown<=PC_d(23 downto 20);
-            end if; 
- if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
-                ano<="10111111";
-                tobeshown<=PC_d(27 downto 24);
-                end if;
-  if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
-                               ano<="01111111";
-                               tobeshown<=PC_d(31 downto 28);
-                               end if;
+ -- if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
+            -- ano<="11011111";
+            -- tobeshown<=PC_d(23 downto 20);
+            -- end if; 
+ -- if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
+                -- ano<="10111111";
+                -- tobeshown<=PC_d(27 downto 24);
+                -- end if;
+  -- if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
+                               -- ano<="01111111";
+                               -- tobeshown<=PC_d(31 downto 28);
+                               -- end if;
                                                            
 
-end if;
+-- end if;
 
 
-if tosel="001" then
+-- if tosel="001" then
 
- if((count_int mod 100000) > 0) AND ((count_int mod 100000) < 10000)  then
- ano<="11111110";
- tobeshown<=result_d(3 downto 0);
+ -- if((count_int mod 100000) > 0) AND ((count_int mod 100000) < 10000)  then
+ -- ano<="11111110";
+ -- tobeshown<=result_d(3 downto 0);
  
- end if;
- if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
- ano<="11111101";
- tobeshown<=result_d(7 downto 4);
+ -- end if;
+ -- if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
+ -- ano<="11111101";
+ -- tobeshown<=result_d(7 downto 4);
  
- end if;
- if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
-  ano<="11111011";
-  tobeshown<=result_d(11 downto 8);
-  end if;
-  if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
-    ano<="11110111";
-    tobeshown<=result_d(15 downto 12);
-    end if;
-  if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
-      ano<="11101111";
-        tobeshown<=result_d(19 downto 16);
-      end if; 
+ -- end if;
+ -- if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
+  -- ano<="11111011";
+  -- tobeshown<=result_d(11 downto 8);
+  -- end if;
+  -- if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
+    -- ano<="11110111";
+    -- tobeshown<=result_d(15 downto 12);
+    -- end if;
+  -- if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
+      -- ano<="11101111";
+        -- tobeshown<=result_d(19 downto 16);
+      -- end if; 
  
- if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
-            ano<="11011111";
-            tobeshown<=result_d(23 downto 20);
-            end if; 
- if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
-                ano<="10111111";
-                tobeshown<=result_d(27 downto 24);
-                end if;
-  if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
-                               ano<="01111111";
-                               tobeshown<=result_d(31 downto 28);
-                               end if;
+ -- if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
+            -- ano<="11011111";
+            -- tobeshown<=result_d(23 downto 20);
+            -- end if; 
+ -- if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
+                -- ano<="10111111";
+                -- tobeshown<=result_d(27 downto 24);
+                -- end if;
+  -- if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
+                               -- ano<="01111111";
+                               -- tobeshown<=result_d(31 downto 28);
+                               -- end if;
                                                            
 
-end if;
+-- end if;
 
 
 
 
-if tosel="010" then
+-- if tosel="010" then
 
- if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
- ano<="11111110";
- tobeshown<=SrcA_d(3 downto 0);
+ -- if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
+ -- ano<="11111110";
+ -- tobeshown<=SrcA_d(3 downto 0);
  
- end if;
- if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
- ano<="11111101";
- tobeshown<=SrcA_d(7 downto 4);
+ -- end if;
+ -- if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
+ -- ano<="11111101";
+ -- tobeshown<=SrcA_d(7 downto 4);
  
- end if;
- if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
-  ano<="11111011";
-  tobeshown<=SrcA_d(11 downto 8);
-  end if;
-  if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
-    ano<="11110111";
-    tobeshown<=SrcA_d(15 downto 12);
-    end if;
-  if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
-      ano<="11101111";
-        tobeshown<=SrcA_d(19 downto 16);
-      end if; 
+ -- end if;
+ -- if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
+  -- ano<="11111011";
+  -- tobeshown<=SrcA_d(11 downto 8);
+  -- end if;
+  -- if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
+    -- ano<="11110111";
+    -- tobeshown<=SrcA_d(15 downto 12);
+    -- end if;
+  -- if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
+      -- ano<="11101111";
+        -- tobeshown<=SrcA_d(19 downto 16);
+      -- end if; 
  
- if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
-            ano<="11011111";
-            tobeshown<=SrcA_d(23 downto 20);
-            end if; 
- if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
-                ano<="10111111";
-                tobeshown<=SrcA_d(27 downto 24);
-                end if;
-  if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
-                               ano<="01111111";
-                               tobeshown<=SrcA_d(31 downto 28);
-                               end if;
+ -- if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
+            -- ano<="11011111";
+            -- tobeshown<=SrcA_d(23 downto 20);
+            -- end if; 
+ -- if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
+                -- ano<="10111111";
+                -- tobeshown<=SrcA_d(27 downto 24);
+                -- end if;
+  -- if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
+                               -- ano<="01111111";
+                               -- tobeshown<=SrcA_d(31 downto 28);
+                               -- end if;
                                                            
 
-end if;
+-- end if;
 
 
-if tosel="011" then
+-- if tosel="011" then
 
- if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
- ano<="11111110";
- tobeshown<=SrcB_d(3 downto 0);
+ -- if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
+ -- ano<="11111110";
+ -- tobeshown<=SrcB_d(3 downto 0);
  
- end if;
- if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
- ano<="11111101";
- tobeshown<=SrcB_d(7 downto 4);
+ -- end if;
+ -- if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
+ -- ano<="11111101";
+ -- tobeshown<=SrcB_d(7 downto 4);
  
- end if;
- if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
-  ano<="11111011";
-  tobeshown<=SrcB_d(11 downto 8);
-  end if;
-  if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
-    ano<="11110111";
-    tobeshown<=SrcB_d(15 downto 12);
-    end if;
-  if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
-      ano<="11101111";
-        tobeshown<=SrcB_d(19 downto 16);
-      end if; 
+ -- end if;
+ -- if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
+  -- ano<="11111011";
+  -- tobeshown<=SrcB_d(11 downto 8);
+  -- end if;
+  -- if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
+    -- ano<="11110111";
+    -- tobeshown<=SrcB_d(15 downto 12);
+    -- end if;
+  -- if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
+      -- ano<="11101111";
+        -- tobeshown<=SrcB_d(19 downto 16);
+      -- end if; 
  
- if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
-            ano<="11011111";
-            tobeshown<=SrcB_d(23 downto 20);
-            end if; 
- if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
-                ano<="10111111";
-                tobeshown<=SrcB_d(27 downto 24);
-                end if;
-  if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
-                               ano<="01111111";
-                               tobeshown<=SrcB_d(31 downto 28);
-                               end if;
+ -- if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
+            -- ano<="11011111";
+            -- tobeshown<=SrcB_d(23 downto 20);
+            -- end if; 
+ -- if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
+                -- ano<="10111111";
+                -- tobeshown<=SrcB_d(27 downto 24);
+                -- end if;
+  -- if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
+                               -- ano<="01111111";
+                               -- tobeshown<=SrcB_d(31 downto 28);
+                               -- end if;
                                                            
 
-end if;
+-- end if;
 
-if tosel="100" then
+-- if tosel="100" then
 
- if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
- ano<="11111110";
- tobeshown<=ALUResult_d(3 downto 0);
+ -- if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
+ -- ano<="11111110";
+ -- tobeshown<=ALUResult_d(3 downto 0);
  
- end if;
- if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
- ano<="11111101";
- tobeshown<=ALUResult_d(7 downto 4);
+ -- end if;
+ -- if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
+ -- ano<="11111101";
+ -- tobeshown<=ALUResult_d(7 downto 4);
  
- end if;
- if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
-  ano<="11111011";
-  tobeshown<=ALUResult_d(11 downto 8);
-  end if;
-  if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
-    ano<="11110111";
-    tobeshown<=ALUResult_d(15 downto 12);
-    end if;
-  if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
-      ano<="11101111";
-        tobeshown<=ALUResult_d(19 downto 16);
-      end if; 
+ -- end if;
+ -- if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
+  -- ano<="11111011";
+  -- tobeshown<=ALUResult_d(11 downto 8);
+  -- end if;
+  -- if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
+    -- ano<="11110111";
+    -- tobeshown<=ALUResult_d(15 downto 12);
+    -- end if;
+  -- if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
+      -- ano<="11101111";
+        -- tobeshown<=ALUResult_d(19 downto 16);
+      -- end if; 
  
- if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
-            ano<="11011111";
-            tobeshown<=ALUResult_d(23 downto 20);
-            end if; 
- if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
-                ano<="10111111";
-                tobeshown<=ALUResult_d(27 downto 24);
-                end if;
-  if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
-                               ano<="01111111";
-                               tobeshown<=ALUResult_d(31 downto 28);
-                               end if;
+ -- if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
+            -- ano<="11011111";
+            -- tobeshown<=ALUResult_d(23 downto 20);
+            -- end if; 
+ -- if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
+                -- ano<="10111111";
+                -- tobeshown<=ALUResult_d(27 downto 24);
+                -- end if;
+  -- if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
+                               -- ano<="01111111";
+                               -- tobeshown<=ALUResult_d(31 downto 28);
+                               -- end if;
                                                            
 
-end if;
+-- end if;
 
-if tosel="101" then
+-- if tosel="101" then
 
- if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
- ano<="11111110";
- tobeshown<=WriteResult_d(3 downto 0);
+ -- if((count_int mod 100000) >0) AND ((count_int mod 100000) < 10000)  then
+ -- ano<="11111110";
+ -- tobeshown<=WriteResult_d(3 downto 0);
  
- end if;
- if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
- ano<="11111101";
- tobeshown<=WriteResult_d(7 downto 4);
+ -- end if;
+ -- if((count_int mod 100000) > 10000) AND ((count_int mod 100000) < 15000)  then
+ -- ano<="11111101";
+ -- tobeshown<=WriteResult_d(7 downto 4);
  
- end if;
- if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
-  ano<="11111011";
-  tobeshown<=WriteResult_d(11 downto 8);
-  end if;
-  if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
-    ano<="11110111";
-    tobeshown<=WriteResult_d(15 downto 12);
-    end if;
-  if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
-      ano<="11101111";
-        tobeshown<=WriteResult_d(19 downto 16);
-      end if; 
+ -- end if;
+ -- if((count_int mod 100000) > 15000) AND ((count_int mod 100000) < 20000)  then
+  -- ano<="11111011";
+  -- tobeshown<=WriteResult_d(11 downto 8);
+  -- end if;
+  -- if((count_int mod 100000) > 20000) AND ((count_int mod 100000) < 25000)  then
+    -- ano<="11110111";
+    -- tobeshown<=WriteResult_d(15 downto 12);
+    -- end if;
+  -- if((count_int mod 100000) > 25000) AND ((count_int mod 100000) < 30000)  then
+      -- ano<="11101111";
+        -- tobeshown<=WriteResult_d(19 downto 16);
+      -- end if; 
  
- if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
-            ano<="11011111";
-            tobeshown<=WriteResult_d(23 downto 20);
-            end if; 
- if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
-                ano<="10111111";
-                tobeshown<=WriteResult_d(27 downto 24);
-                end if;
-  if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
-                               ano<="01111111";
-                               tobeshown<=WriteResult_d(31 downto 28);
-                               end if;
+ -- if((count_int mod 100000) > 30000) AND ((count_int mod 100000) < 35000)  then
+            -- ano<="11011111";
+            -- tobeshown<=WriteResult_d(23 downto 20);
+            -- end if; 
+ -- if((count_int mod 100000) > 35000) AND ((count_int mod 100000) < 40000)  then
+                -- ano<="10111111";
+                -- tobeshown<=WriteResult_d(27 downto 24);
+                -- end if;
+  -- if((count_int mod 100000) > 40000) AND ((count_int mod 100000) < 45000)  then
+                               -- ano<="01111111";
+                               -- tobeshown<=WriteResult_d(31 downto 28);
+                               -- end if;
                                                            
 
-end if;
+-- end if;
    
                         
-case tobeshown is
-                                             when "0000" => SSEG_CA <= "1000000"; --0
-                                           when "0001" => SSEG_CA <= "1111001"; --1
-                                           when "0010" => SSEG_CA <= "0100100";  --2
-                                           when "0011" => SSEG_CA <= "0110000"; --3
-                                           when "0100" => SSEG_CA <= "0011001"; --4
-                                           when "0101" => SSEG_CA <= "0010010"; --5
-                                           when "0110" => SSEG_CA <= "0000010";  --6 
-                                           when "0111" => SSEG_CA <= "1111000";  --7
-                                           when "1000" => SSEG_CA <= "0000000"; --8
-                                           when "1001" => SSEG_CA <= "0010000"; --9
-                                           when "1010" => SSEG_CA <= "0001000"; --A
-                                           when "1011" => SSEG_CA <= "0000011"; --b
-                                           when "1100" => SSEG_CA <= "1000110"; --C
-                                           when "1101" => SSEG_CA <= "0100001"; --d  
-                                           when "1110" => SSEG_CA <= "0000110"; --E
-                                           when others => SSEG_CA <= "0001110";  --F
-                                    end case;                               
+-- case tobeshown is
+                                             -- when "0000" => SSEG_CA <= "1000000"; --0
+                                           -- when "0001" => SSEG_CA <= "1111001"; --1
+                                           -- when "0010" => SSEG_CA <= "0100100";  --2
+                                           -- when "0011" => SSEG_CA <= "0110000"; --3
+                                           -- when "0100" => SSEG_CA <= "0011001"; --4
+                                           -- when "0101" => SSEG_CA <= "0010010"; --5
+                                           -- when "0110" => SSEG_CA <= "0000010";  --6 
+                                           -- when "0111" => SSEG_CA <= "1111000";  --7
+                                           -- when "1000" => SSEG_CA <= "0000000"; --8
+                                           -- when "1001" => SSEG_CA <= "0010000"; --9
+                                           -- when "1010" => SSEG_CA <= "0001000"; --A
+                                           -- when "1011" => SSEG_CA <= "0000011"; --b
+                                           -- when "1100" => SSEG_CA <= "1000110"; --C
+                                           -- when "1101" => SSEG_CA <= "0100001"; --d  
+                                           -- when "1110" => SSEG_CA <= "0000110"; --E
+                                           -- when others => SSEG_CA <= "0001110";  --F
+                                    -- end case;                               
                                
                                
- if count_int=45000 then
- count_int<=0;
+ -- if count_int=45000 then
+ -- count_int<=0;
  
- end if;
-cath<=SSEG_CA;
- an<=ano;
+ -- end if;
+-- cath<=SSEG_CA;
+ -- an<=ano;
 
 
 
-end process;
+-- end process;
 
 
 
@@ -500,7 +659,7 @@ begin
   end if;
 end process;
 
-PC_mux : process (jmp, branch, PCbranch, PCplus4, PCjmp)
+PC_mux : process (jmp, branch, PCbranch, PCplus4, PCjmp, PCSrc)
 begin
 -- --  if PCSrc = '1' then
 -- --    PC <= PCbranch;
@@ -587,6 +746,8 @@ port map(
 dataMem_map : DataMemory
 port map(
   clk           => clk  , --in std_logic_vector(31 downto 0);
+  din           => din  ,
+  dout          => dout ,
   ALUResult     => dataMemAddr , --in std_logic_vector(31 downto 0); --input address from ALU
   MemWrite      => memWrite , --in std_logic; --write enable if memory to write
   WriteData     => rd2      , --in std_logic_vector(31 downto 0); --input of rd2

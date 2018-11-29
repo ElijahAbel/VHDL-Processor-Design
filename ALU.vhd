@@ -41,6 +41,7 @@ end if;
 IF ALUControl="001" then--SUBTRACT
   if SrcA = SrcB then
     zeroo <= '1';
+	AluOut<=SrcA + NOT(SrcB) + '1';
   else
     AluOut<=SrcA + NOT(SrcB) + '1';
     zeroo<='0';
