@@ -33,8 +33,11 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity DataMemory is
     Port ( clk : in  STD_LOGIC;
+           clk_din : in STD_LOGIC;
 	       din : in STD_LOGIC_VECTOR(63 downto 0);
 		   dout : out STD_LOGIC_VECTOR(63 downto 0);
+		   skey : out STD_LOGIC_VECTOR(63 downto 0);
+		   userKey  : in STD_LOGIC_VECTOR(127 downto 0);
            ALUResult : in  STD_LOGIC_VECTOR(31 downto 0);
            WriteData : in  STD_LOGIC_VECTOR(31 downto 0);
            MemWrite : in  STD_LOGIC;
@@ -43,8 +46,8 @@ end DataMemory;
 
 architecture Behavioral of DataMemory is
 
-SIGNAL immAddr : STD_LOGIC_VECTOR(7 downto 0) := x"00"; --used to address the memory 
-TYPE memory IS ARRAY (0 TO 255) OF STD_LOGIC_VECTOR(31 DOWNTO 0);
+SIGNAL immAddr : STD_LOGIC_VECTOR(8 downto 0) := "000000000"; --used to address the memory 
+TYPE memory IS ARRAY (0 TO 511) OF STD_LOGIC_VECTOR(31 DOWNTO 0);
 SIGNAL DataMem : memory := memory'(	0 => x"00000000", 1 => x"00000000", 2 => x"46F8E8C5", 3 => x"460C6085",
                                     4 => x"70F83B8A", 5 => x"284B8303", 6 => x"513E1454", 7 => x"F621ED22",
                                     8 => x"3125065D", 9 => x"11A83A5D",10 => x"D427686B",11 => x"713AD82D",
@@ -83,30 +86,30 @@ SIGNAL DataMem : memory := memory'(	0 => x"00000000", 1 => x"00000000", 2 => x"4
 									128 => x"20000000" , --536870912
 									129 => x"40000000" , --1073741824
 									130 => x"80000000" , --2147483648
-									others => x"00000000");
+									others => x"00000000");								
+									
 begin
-immAddr <= ALUResult(7 downto 0);
---dout <= DataMem(222) & DataMem(223);
+immAddr <= ALUResult(8 downto 0);
+--dout <= DataMem(28) & DataMem(29); --encryption
+dout <= DataMem(30) & DataMem(31); --decryption 
+skey <= DataMem(90) & DataMem(91); --skey for A and B
 
-Process(clk, MemWrite, DataMem)
+Process(clk_din, MemWrite, DataMem)
 Begin
-IF(clk'event AND clk = '1') THEN
+IF(clk_din'event AND clk_din = '1') THEN
 -- Store
-
 IF(MemWrite = '1') THEN
-	ReadData <= ALUResult;
-	DataMem(CONV_INTEGER(immAddr)) <= WriteData;
--- Inputs from FPGA
+  ReadData <= ALUResult;
+  DataMem(CONV_INTEGER(immAddr)) <= WriteData;
 ELSE
-    DataMem(26) <= din(63 downto 32);
-	DataMem(27) <= din(31 downto  0);
-
-	
+     DataMem(26) <= din(63 downto 32);
+     DataMem(27) <= din(31 downto  0);
+	 DataMem(50) <= userKey(127 downto 96);
+	 DataMem(51) <= userKey(95 downto  64);
+	 DataMem(52) <= userKey(63 downto  32);
+	 DataMem(53) <= userKey(31 downto   0);
 END IF;
-dout <= DataMem(222) & DataMem(223);
---ReadData <= ReadD;
 END IF;
-
 	ReadData <= DataMem(CONV_INTEGER(immAddr));
 END PROCESS;
 end Behavioral;
