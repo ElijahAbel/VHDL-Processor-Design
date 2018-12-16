@@ -20,6 +20,7 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.STD_LOGIC_UNSIGNED.ALL; --use CONV_INTEGER
+use work.state_pkg.all;
 
 
 entity RegisterFile is
@@ -30,6 +31,7 @@ PORT  (
   A3 : IN STD_LOGIC_VECTOR(4 DOWNTO 0); --Rt or Rd
   WD3 : IN STD_LOGIC_VECTOR(31 DOWNTO 0); --32 bits to be stored in Reg
   WE3 : IN STD_LOGIC; --Flag to determine if we store in Register this clock cycle
+  RCState : in RCStateType; --State  to determine if we should be writing to registers at all
   RD1 : OUT STD_LOGIC_VECTOR(31 DOWNTO 0); --Output 1, always a register value
   RD2 : OUT STD_LOGIC_VECTOR(31 DOWNTO 0) --Output 2, Could be regist or immediate value
   );
@@ -45,14 +47,18 @@ Signal i_RD2: STD_LOGIC_VECTOR(31 DOWNTO 0) := (others => '0');
 
 	
 begin
-PROCESS(clk)
+
+PROCESS(clk, RCState)
 BEGIN
 
 if(clk'EVENT and clk='1') then
-	
+
+    if(RCState=PRE_KEY_GEN or RCState=INP_RDY) then
+        regArray <= (others => x"00000000");
+	end if;
 	--Since the WD3 value is from the previous cycle, we will write to the register
 	--before we set our ouput signals in case the regist we have just written to is used in the next line of code
-	if(WE3='1') then --If RegWrite from the Control Unit is '1' then we write to a register
+	if(WE3='1' and (RCState=KEY_GEN or RCState=ENC or RCState=DEC)) then --If RegWrite from the Control Unit is '1' then we write to a register
 		regArray(CONV_INTEGER(A3(4 DOWNTO 0))) <= WD3(31 DOWNTO 0);
 	end if;
 	

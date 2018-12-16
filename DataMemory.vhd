@@ -21,7 +21,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.STD_LOGIC_UNSIGNED.ALL;
 use IEEE.NUMERIC_STD.ALL;
-
+use work.state_pkg.all;
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
 --use IEEE.NUMERIC_STD.ALL;
@@ -36,7 +36,8 @@ entity DataMemory is
            clk_din : in STD_LOGIC;
 	       din : in STD_LOGIC_VECTOR(63 downto 0);
 		   dout : out STD_LOGIC_VECTOR(63 downto 0);
-		   skey : out STD_LOGIC_VECTOR(63 downto 0);
+		   --skey : out STD_LOGIC_VECTOR(63 downto 0);
+		   RCState : in RCStateType;
 		   userKey  : in STD_LOGIC_VECTOR(127 downto 0);
            ALUResult : in  STD_LOGIC_VECTOR(31 downto 0);
            WriteData : in  STD_LOGIC_VECTOR(31 downto 0);
@@ -90,15 +91,17 @@ SIGNAL DataMem : memory := memory'(	0 => x"00000000", 1 => x"00000000", 2 => x"4
 									
 begin
 immAddr <= ALUResult(8 downto 0);
---dout <= DataMem(28) & DataMem(29); --encryption
-dout <= DataMem(30) & DataMem(31); --decryption 
-skey <= DataMem(90) & DataMem(91); --skey for A and B
+--dout <= DataMem(24) & DataMem(25); --skey 25 and 26
+--dout <= DataMem(26) & DataMem(27); --encryption
+dout <= DataMem(28) & DataMem(29); --encryption
+--dout <= DataMem(30) & DataMem(31); --decryption 
+--skey <= DataMem(90) & DataMem(91); --skey for A and B
 
-Process(clk_din, MemWrite, DataMem)
+Process(clk_din, MemWrite, DataMem, RCState)
 Begin
 IF(clk_din'event AND clk_din = '1') THEN
 -- Store
-IF(MemWrite = '1') THEN
+IF(MemWrite = '1' and (RCState=KEY_GEN or RCState=ENC or RCState=DEC)) THEN
   ReadData <= ALUResult;
   DataMem(CONV_INTEGER(immAddr)) <= WriteData;
 ELSE
@@ -110,7 +113,11 @@ ELSE
 	 DataMem(53) <= userKey(31 downto   0);
 END IF;
 END IF;
-	ReadData <= DataMem(CONV_INTEGER(immAddr));
+    if RCState = INP_RDY then
+      ReadData <= (others => '0');
+    else
+	  ReadData <= DataMem(CONV_INTEGER(immAddr));
+	end if;
 END PROCESS;
 end Behavioral;
 
